@@ -47,6 +47,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Log in to Container Registry
         uses: docker/login-action@v3
         with:
@@ -68,36 +74,11 @@ jobs:
         with:
           context: .
           push: true
+          platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-  deploy:
-    needs: build-and-push-image
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    environment: production
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Azure Login
-        uses: azure/login@v2
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: Set AKS context
-        uses: azure/aks-set-context@v3
-        with:
-          resource-group: ${{ secrets.AKS_RESOURCE_GROUP }}
-          cluster-name: ${{ secrets.AKS_CLUSTER_NAME }}
-
-      - name: Deploy to AKS
-        run: |
-          helm upgrade --install frontend ./helm/frontend \
-            --namespace parkora \
-            --create-namespace \
-            --set image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} \
-            --set image.tag=${{ github.sha }} \
-            --set ingress.host=parkora.crn.si \
-            --wait
+  # NOTE: Deploy job is disabled because Azure Student subscriptions cannot create Service Principals.
+  # Deployment to AKS must be done manually using:
+  #   az aks get-credentials --resource-group rg-parkora --name aks-parkora
+  #   helm upgrade --install frontend ./helm/frontend --namespace parkora --set image.tag=main

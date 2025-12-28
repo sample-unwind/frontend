@@ -17,7 +17,7 @@ ingress:
   enabled: true
   className: kong
   annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-prod
+    cert-manager.io/cluster-issuer: letsencrypt-http01
   host: parkora.crn.si
   tls:
     enabled: true
