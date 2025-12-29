@@ -21,7 +21,7 @@
 
 	async function fetchParkingSpots() {
 		try {
-			const response = await fetch('/api/v1/parking');
+			const response = await fetch('/_internal/parking-proxy');
 			if (!response.ok) {
 				throw new Error('Failed to fetch parking spots');
 			}
