@@ -1,64 +1,30 @@
 import { json } from '@sveltejs/kit';
+import { env } from '$env/dynamic/private';
 import type { RequestHandler } from './$types';
 
-// Mock parking data - will be replaced with real API calls to parking-service
-const mockParkingSpots = [
-	{
-		id: '1',
-		name: 'P+R Dolgi most',
-		address: 'Dolgi most 1, Ljubljana',
-		totalSpots: 520,
-		availableSpots: 127,
-		pricePerHour: 0.6,
-		isOpen: true,
-		latitude: 46.0335,
-		longitude: 14.4768
-	},
-	{
-		id: '2',
-		name: 'Parkirna hiša Kongresni trg',
-		address: 'Kongresni trg 1, Ljubljana',
-		totalSpots: 720,
-		availableSpots: 43,
-		pricePerHour: 1.8,
-		isOpen: true,
-		latitude: 46.0511,
-		longitude: 14.5051
-	},
-	{
-		id: '3',
-		name: 'P+R Studenec',
-		address: 'Studenec 18, Ljubljana',
-		totalSpots: 187,
-		availableSpots: 89,
-		pricePerHour: 0.6,
-		isOpen: true,
-		latitude: 46.0648,
-		longitude: 14.5412
-	},
-	{
-		id: '4',
-		name: 'Parkirna hiša Nama',
-		address: 'Tomšičeva ulica 1, Ljubljana',
-		totalSpots: 450,
-		availableSpots: 0,
-		pricePerHour: 2.0,
-		isOpen: true,
-		latitude: 46.0553,
-		longitude: 14.5063
-	},
-	{
-		id: '5',
-		name: 'Parkirna hiša Maksimilijana',
-		address: 'Trg prekomorskih brigad 1, Ljubljana',
-		totalSpots: 280,
-		availableSpots: 156,
-		pricePerHour: 1.5,
-		isOpen: false,
-		latitude: 46.0569,
-		longitude: 14.5166
-	}
-];
+// Parking service API base URL (internal cluster service or external URL)
+const PARKING_SERVICE_URL =
+	env.PARKING_SERVICE_URL || 'https://parkora.crn.si/api/v1/parking';
+
+interface AvailabilityData {
+	available_spots: number;
+	total_spots: number;
+	parking_location: {
+		name: string;
+	};
+}
+
+interface ParkingSpot {
+	id: string;
+	name: string;
+	address: string;
+	totalSpots: number;
+	availableSpots: number;
+	pricePerHour: number;
+	isOpen: boolean;
+	latitude: number;
+	longitude: number;
+}
 
 export const GET: RequestHandler = async ({ locals }) => {
 	// In production, check authentication
@@ -66,9 +32,57 @@ export const GET: RequestHandler = async ({ locals }) => {
 	// 	return json({ error: 'Unauthorized' }, { status: 401 });
 	// }
 
-	return json({
-		parkingSpots: mockParkingSpots,
-		totalCount: mockParkingSpots.length,
-		timestamp: new Date().toISOString()
-	});
+	try {
+		// Fetch current availability from parking-service
+		const response = await fetch(`${PARKING_SERVICE_URL}/analytics/availability/current`);
+
+		if (!response.ok) {
+			console.error(
+				`Parking service returned ${response.status}: ${await response.text()}`
+			);
+			return json(
+				{ error: 'Failed to fetch parking data from parking-service' },
+				{ status: 502 }
+			);
+		}
+
+		const availabilityData: AvailabilityData[] = await response.json();
+
+		// Transform the data to match frontend expected format
+		// Group by parking location name and take the most recent entry for each
+		const latestByLocation = new Map<string, AvailabilityData>();
+		for (const entry of availabilityData) {
+			const name = entry.parking_location?.name;
+			if (name && !latestByLocation.has(name)) {
+				latestByLocation.set(name, entry);
+			}
+		}
+
+		// Convert to frontend format
+		const parkingSpots: ParkingSpot[] = Array.from(latestByLocation.entries()).map(
+			([name, data], index) => ({
+				id: String(index + 1),
+				name: name,
+				address: 'Ljubljana', // Address not available from current API
+				totalSpots: data.total_spots,
+				availableSpots: data.available_spots,
+				pricePerHour: 0.0, // Price not available from current API
+				isOpen: true, // Assume open if we have data
+				latitude: 46.0569, // Default Ljubljana coordinates
+				longitude: 14.5058
+			})
+		);
+
+		return json({
+			parkingSpots,
+			totalCount: parkingSpots.length,
+			timestamp: new Date().toISOString()
+		});
+	} catch (error) {
+		console.error('Error fetching from parking-service:', error);
+		return json(
+			{ error: 'Failed to connect to parking-service' },
+			{ status: 503 }
+		);
+	}
 };
