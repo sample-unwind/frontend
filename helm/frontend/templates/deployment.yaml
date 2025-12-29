@@ -4,6 +4,7 @@ metadata:
   name: {{ .Release.Name }}
   labels:
     app: {{ .Release.Name }}
+    auto-update: "enabled"
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
@@ -21,7 +22,7 @@ spec:
       containers:
         - name: {{ .Release.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          imagePullPolicy: Always
           ports:
             - containerPort: {{ .Values.service.targetPort }}
               protocol: TCP
