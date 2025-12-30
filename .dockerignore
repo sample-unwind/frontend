@@ -36,6 +36,8 @@ coverage
 # Misc
 *.md
 !README.md
+!CHANGELOG.md
+!CONTRIBUTING.md
 .editorconfig
 .prettierrc
 .eslintrc*
@@ -43,7 +45,3 @@ coverage
 # CI/CD
 .github
 helm
-
-# Docker
-Dockerfile
-.dockerignore
