@@ -77,6 +77,8 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   # NOTE: Deploy job is disabled because Azure Student subscriptions cannot create Service Principals.
   # Deployment to AKS must be done manually using:
