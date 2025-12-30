@@ -10,8 +10,21 @@ export async function getOIDCConfig(): Promise<client.Configuration> {
 	if (config) return config;
 
 	const issuerUrl = new URL(`${KEYCLOAK_URL}/realms/${REALM}`);
-	config = await client.discovery(issuerUrl, CLIENT_ID);
-	return config;
+
+	for (let attempt = 1; attempt <= 3; attempt++) {
+		try {
+			config = await client.discovery(issuerUrl, CLIENT_ID);
+			return config;
+		} catch (error) {
+			console.error(`OIDC discovery attempt ${attempt} failed:`, error);
+			if (attempt < 3) {
+				await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); // Exponential backoff
+			} else {
+				throw error;
+			}
+		}
+	}
+	return config!; // Should not reach here
 }
 
 export async function buildAuthorizationUrl(
