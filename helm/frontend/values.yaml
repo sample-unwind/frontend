@@ -39,7 +39,7 @@ autoscaling:
   targetCPUUtilizationPercentage: 80
 
 env:
-  KEYCLOAK_URL: https://keycloak.parkora.crn.si/auth
+  KEYCLOAK_URL: https://keycloak.parkora.crn.si./auth
   KEYCLOAK_REALM: parkora
   KEYCLOAK_CLIENT_ID: frontend-app
   BASE_URL: https://parkora.crn.si
