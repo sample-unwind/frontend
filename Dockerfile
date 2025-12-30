@@ -31,7 +31,7 @@ COPY --from=builder /app/package*.json ./
 
 # Install production dependencies only with cache mount
 RUN --mount=type=cache,target=/root/.npm \
-    npm ci --omit=dev && npm cache clean --force
+    npm ci --omit=dev
 
 # Set ownership
 RUN chown -R sveltekit:nodejs /app
