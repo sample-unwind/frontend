@@ -1,6 +1,6 @@
 import * as client from 'openid-client';
 
-const KEYCLOAK_URL = 'https://keycloak.parkora.crn.si./auth';
+const KEYCLOAK_URL = 'https://keycloak.parkora.crn.si/auth';
 const REALM = 'parkora';
 const CLIENT_ID = 'frontend-app';
 
