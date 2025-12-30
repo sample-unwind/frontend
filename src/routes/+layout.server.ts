@@ -2,6 +2,7 @@ import type { LayoutServerLoad } from './$types';
 
 export const load: LayoutServerLoad = async ({ locals }) => {
 	return {
-		isAuthenticated: locals.isAuthenticated
+		isAuthenticated: locals.isAuthenticated,
+		user: locals.user
 	};
 };

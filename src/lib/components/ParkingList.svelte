@@ -1,4 +1,6 @@
 <script lang="ts">
+	import ReservationModal from './ReservationModal.svelte';
+
 	interface ParkingSpot {
 		id: string;
 		name: string;
@@ -11,7 +13,17 @@
 		longitude: number;
 	}
 
-	let { parkingSpots }: { parkingSpots: ParkingSpot[] } = $props();
+	interface User {
+		id: string;
+		email: string;
+		name: string;
+	}
+
+	let { parkingSpots, user }: { parkingSpots: ParkingSpot[]; user?: User } = $props();
+
+	let selectedSpot = $state<ParkingSpot | null>(null);
+	let showReservationModal = $state(false);
+	let successMessage = $state('');
 
 	function getAvailabilityClass(available: number, total: number): string {
 		const ratio = available / total;
@@ -25,7 +37,32 @@
 		if (available / total < 0.2) return 'Limited';
 		return 'Available';
 	}
+
+	function handleReserve(spot: ParkingSpot) {
+		selectedSpot = spot;
+		showReservationModal = true;
+	}
+
+	function handleReservationCreated(event: CustomEvent) {
+		console.log('Reservation created:', event.detail);
+		successMessage = 'Reservation created successfully!';
+		// Clear message after 3 seconds
+		setTimeout(() => {
+			successMessage = '';
+		}, 3000);
+	}
+
+	function closeModal() {
+		showReservationModal = false;
+		selectedSpot = null;
+	}
 </script>
+
+{#if successMessage}
+	<div class="alert alert-success mb-4">
+		<span>{successMessage}</span>
+	</div>
+{/if}
 
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 	{#each parkingSpots as spot (spot.id)}
@@ -53,9 +90,10 @@
 					<span class="text-lg font-semibold">
 						{spot.pricePerHour.toFixed(2)} EUR/h
 					</span>
-					<button 
+					<button
 						class="btn btn-primary btn-sm"
 						disabled={!spot.isOpen || spot.availableSpots === 0}
+						onclick={() => handleReserve(spot)}
 					>
 						Reserve
 					</button>
@@ -69,4 +107,16 @@
 	<div class="text-center py-12">
 		<p class="text-base-content/70">No parking spots available</p>
 	</div>
+{/if}
+
+{#if selectedSpot && user}
+	<ReservationModal
+		parkingSpotId={selectedSpot.id}
+		parkingSpotName={selectedSpot.name}
+		pricePerHour={selectedSpot.pricePerHour}
+		userId={user.id}
+		isOpen={showReservationModal}
+		on:close={closeModal}
+		on:reservationCreated={handleReservationCreated}
+	/>
 {/if}

@@ -96,7 +96,7 @@
 					<span>{error}</span>
 				</div>
 			{:else}
-				<ParkingList {parkingSpots} />
+				<ParkingList {parkingSpots} user={data.user} />
 			{/if}
 		{/if}
 	</main>
