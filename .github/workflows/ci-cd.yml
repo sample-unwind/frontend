@@ -81,6 +81,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          provenance: false
 
   # NOTE: Deploy job is disabled because Azure Student subscriptions cannot create Service Principals.
   # Deployment to AKS must be done manually using:
