@@ -99,10 +99,10 @@
 </script>
 
 {#if isOpen}
-	<!-- svelte-ignore a11y-click-events-have-key-events -->
-	<!-- svelte-ignore a11y-no-static-element-interactions -->
-	<div class="modal modal-open" on:click={closeModal}>
-		<div class="modal-box" on:click|stopPropagation>
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div class="modal modal-open" onclick={closeModal}>
+		<div class="modal-box" onclick={(e) => e.stopPropagation()}>
 			<h3 class="font-bold text-lg mb-4">Reserve Parking Spot</h3>
 			<p class="mb-4">{parkingSpotName}</p>
 
@@ -113,10 +113,11 @@
 			{/if}
 
 			<div class="form-control mb-4">
-				<label class="label">
+				<label class="label" for="startTime">
 					<span class="label-text">Start Time</span>
 				</label>
 				<input
+					id="startTime"
 					type="datetime-local"
 					class="input input-bordered"
 					bind:value={startTime}
@@ -126,10 +127,10 @@
 			</div>
 
 			<div class="form-control mb-4">
-				<label class="label">
+				<label class="label" for="duration">
 					<span class="label-text">Duration (hours)</span>
 				</label>
-				<select class="select select-bordered" bind:value={duration}>
+				<select id="duration" class="select select-bordered" bind:value={duration}>
 					<option value={1}>1 hour</option>
 					<option value={2}>2 hours</option>
 					<option value={3}>3 hours</option>
@@ -149,12 +150,12 @@
 			</div>
 
 			<div class="modal-action">
-				<button class="btn btn-ghost" on:click={closeModal} disabled={loading}>
+				<button class="btn btn-ghost" onclick={closeModal} disabled={loading}>
 					Cancel
 				</button>
 				<button
 					class="btn btn-primary"
-					on:click={handleSubmit}
+					onclick={handleSubmit}
 					disabled={loading || !startTime}
 				>
 					{#if loading}
