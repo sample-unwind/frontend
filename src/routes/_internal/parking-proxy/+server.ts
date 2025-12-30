@@ -9,9 +9,11 @@ const PARKING_SERVICE_URL =
 interface AvailabilityData {
 	available_spots: number;
 	total_spots: number;
-	parking_location: {
-		name: string;
-	};
+	name: string;
+	price: number;
+	lon: number;
+	lat: number;
+	actual_timestamp: string;
 }
 
 interface ParkingSpot {
@@ -52,7 +54,7 @@ export const GET: RequestHandler = async ({ locals }) => {
 		// Group by parking location name and take the most recent entry for each
 		const latestByLocation = new Map<string, AvailabilityData>();
 		for (const entry of availabilityData) {
-			const name = entry.parking_location?.name;
+			const name = entry.name;
 			if (name && !latestByLocation.has(name)) {
 				latestByLocation.set(name, entry);
 			}
@@ -66,10 +68,10 @@ export const GET: RequestHandler = async ({ locals }) => {
 				address: 'Ljubljana', // Address not available from current API
 				totalSpots: data.total_spots,
 				availableSpots: data.available_spots,
-				pricePerHour: 0.0, // Price not available from current API
+				pricePerHour: data.price / 100, // Price in cents, convert to euros
 				isOpen: true, // Assume open if we have data
-				latitude: 46.0569, // Default Ljubljana coordinates
-				longitude: 14.5058
+				latitude: data.lat,
+				longitude: data.lon
 			})
 		);
 
