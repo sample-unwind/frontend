@@ -2,15 +2,18 @@ import { json } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 import type { RequestHandler } from './$types';
 
-// Reservation service API base URL (internal cluster service or external URL)
+// Reservation service API base URL (internal cluster service)
 const RESERVATION_SERVICE_URL =
-	env.RESERVATION_SERVICE_URL || 'https://reservation-service:8000';
+	env.RESERVATION_SERVICE_URL || 'http://reservation-service.parkora.svc.cluster.local';
+
+// Default tenant ID for multitenancy
+const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000001';
 
 export const POST: RequestHandler = async ({ request, locals }) => {
-	// In production, check authentication
-	// if (!locals.isAuthenticated) {
-	// 	return json({ error: 'Unauthorized' }, { status: 401 });
-	// }
+	// Check authentication
+	if (!locals.isAuthenticated) {
+		return json({ error: 'Unauthorized' }, { status: 401 });
+	}
 
 	try {
 		const body = await request.json();
@@ -20,8 +23,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
+				'X-Tenant-ID': DEFAULT_TENANT_ID
 			},
-			body: JSON.stringify(body),
+			body: JSON.stringify(body)
 		});
 
 		if (!response.ok) {

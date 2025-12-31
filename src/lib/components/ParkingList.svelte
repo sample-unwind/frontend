@@ -44,12 +44,20 @@
 	}
 
 	function handleReservationCreated(event: CustomEvent) {
-		console.log('Reservation created:', event.detail);
-		successMessage = 'Reservation created successfully!';
-		// Clear message after 3 seconds
+		const reservation = event.detail;
+		console.log('Reservation created:', reservation);
+		
+		// Show success message with price if available
+		if (reservation?.totalCost !== undefined) {
+			successMessage = `Reservation confirmed! Total: €${reservation.totalCost.toFixed(2)}`;
+		} else {
+			successMessage = 'Reservation created successfully!';
+		}
+		
+		// Clear message after 5 seconds
 		setTimeout(() => {
 			successMessage = '';
-		}, 3000);
+		}, 5000);
 	}
 
 	function closeModal() {

@@ -43,6 +43,7 @@ env:
   KEYCLOAK_REALM: parkora
   KEYCLOAK_CLIENT_ID: frontend-app
   BASE_URL: https://parkora.crn.si
+  RESERVATION_SERVICE_URL: http://reservation-service.parkora.svc.cluster.local
 
 livenessProbe:
   httpGet:

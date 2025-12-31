@@ -9,6 +9,15 @@
 		isOpen: boolean;
 	}
 
+	interface ReservationResult {
+		id: string;
+		status: string;
+		totalCost: number;
+		startTime: string;
+		endTime: string;
+		durationHours: number;
+	}
+
 	let { parkingSpotId, parkingSpotName, pricePerHour, userId, isOpen }: Props = $props();
 
 	const dispatch = createEventDispatcher();
@@ -17,22 +26,13 @@
 	let duration = $state(1);
 	let loading = $state(false);
 	let error = $state('');
+	let reservationResult = $state<ReservationResult | null>(null);
 
-	// Calculate total cost with validation
-	let totalCost = $derived(() => {
-		const cost = duration * pricePerHour;
-		// Ensure positive cost and reasonable range (max €1000 for 24 hours)
-		if (cost <= 0 || cost > 1000) {
-			return '0.00';
-		}
-		return cost.toFixed(2);
-	});
+	// Calculate total cost
+	let totalCost = $derived(duration * pricePerHour);
 
 	// Validation for form submission
-	let isValidCost = $derived(() => {
-		const cost = duration * pricePerHour;
-		return cost > 0 && cost <= 1000;
-	});
+	let isValidCost = $derived(totalCost > 0 && totalCost <= 1000);
 
 	// Set minimum start time to now + 30 minutes
 	const now = new Date();
@@ -49,6 +49,7 @@
 		duration = 1;
 		error = '';
 		loading = false;
+		reservationResult = null;
 	}
 
 	async function handleSubmit() {
@@ -68,6 +69,10 @@
 							id
 							status
 							totalCost
+							startTime
+							endTime
+							durationHours
+							parkingSpotId
 						}
 					}
 				`,
@@ -77,7 +82,7 @@
 						parkingSpotId,
 						startTime: new Date(startTime).toISOString(),
 						durationHours: duration,
-						totalCost: duration * pricePerHour
+						totalCost: totalCost
 					}
 				}
 			};
@@ -85,24 +90,39 @@
 			const response = await fetch('/_internal/reservation-proxy', {
 				method: 'POST',
 				headers: {
-					'Content-Type': 'application/json',
+					'Content-Type': 'application/json'
 				},
-				body: JSON.stringify(reservationData),
+				body: JSON.stringify(reservationData)
 			});
 
 			const result = await response.json();
+
+			if (!response.ok) {
+				throw new Error(result.error || 'Failed to create reservation');
+			}
 
 			if (result.errors) {
 				throw new Error(result.errors[0].message);
 			}
 
-			dispatch('reservationCreated', result.data.createReservation);
-			closeModal();
+			// Store the reservation result for display
+			reservationResult = result.data.createReservation;
+
+			// Dispatch event with reservation data
+			dispatch('reservationCreated', reservationResult);
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Failed to create reservation';
 		} finally {
 			loading = false;
 		}
+	}
+
+	function formatDateTime(isoString: string): string {
+		const date = new Date(isoString);
+		return date.toLocaleString('en-GB', {
+			dateStyle: 'medium',
+			timeStyle: 'short'
+		});
 	}
 </script>
 
@@ -111,70 +131,118 @@
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div class="modal modal-open" onclick={closeModal}>
 		<div class="modal-box" onclick={(e) => e.stopPropagation()}>
-			<h3 class="font-bold text-lg mb-4">Reserve Parking Spot</h3>
-			<p class="mb-4">{parkingSpotName}</p>
+			{#if reservationResult}
+				<!-- Success State -->
+				<div class="text-center">
+					<div class="text-success text-6xl mb-4">✓</div>
+					<h3 class="font-bold text-xl mb-2">Reservation Confirmed!</h3>
+					<p class="text-base-content/70 mb-4">{parkingSpotName}</p>
 
-			{#if error}
-				<div class="alert alert-error mb-4">
-					<span>{error}</span>
+					<div class="bg-base-200 p-4 rounded-lg text-left space-y-2">
+						<div class="flex justify-between">
+							<span class="text-base-content/70">Reservation ID:</span>
+							<span class="font-mono text-sm">{reservationResult.id.slice(0, 8)}...</span>
+						</div>
+						<div class="flex justify-between">
+							<span class="text-base-content/70">Status:</span>
+							<span class="badge badge-success">{reservationResult.status}</span>
+						</div>
+						<div class="flex justify-between">
+							<span class="text-base-content/70">Start:</span>
+							<span>{formatDateTime(reservationResult.startTime)}</span>
+						</div>
+						<div class="flex justify-between">
+							<span class="text-base-content/70">End:</span>
+							<span>{formatDateTime(reservationResult.endTime)}</span>
+						</div>
+						<div class="flex justify-between">
+							<span class="text-base-content/70">Duration:</span>
+							<span>{reservationResult.durationHours} hour(s)</span>
+						</div>
+						<div class="divider my-2"></div>
+						<div class="flex justify-between text-lg font-bold">
+							<span>Total:</span>
+							<span class="text-primary">€{reservationResult.totalCost.toFixed(2)}</span>
+						</div>
+					</div>
+
+					<div class="modal-action justify-center">
+						<button class="btn btn-primary" onclick={closeModal}>Done</button>
+					</div>
+				</div>
+			{:else}
+				<!-- Reservation Form -->
+				<h3 class="font-bold text-lg mb-4">Reserve Parking Spot</h3>
+				<p class="mb-4">{parkingSpotName}</p>
+
+				{#if error}
+					<div class="alert alert-error mb-4">
+						<span>{error}</span>
+					</div>
+				{/if}
+
+				<div class="form-control mb-4">
+					<label class="label" for="startTime">
+						<span class="label-text">Start Time</span>
+					</label>
+					<input
+						id="startTime"
+						type="datetime-local"
+						class="input input-bordered"
+						bind:value={startTime}
+						min={minStartTime}
+						required
+					/>
+				</div>
+
+				<div class="form-control mb-4">
+					<label class="label" for="duration">
+						<span class="label-text">Duration (hours)</span>
+					</label>
+					<select id="duration" class="select select-bordered" bind:value={duration}>
+						<option value={1}>1 hour</option>
+						<option value={2}>2 hours</option>
+						<option value={3}>3 hours</option>
+						<option value={4}>4 hours</option>
+						<option value={6}>6 hours</option>
+						<option value={8}>8 hours</option>
+						<option value={12}>12 hours</option>
+						<option value={24}>24 hours</option>
+					</select>
+				</div>
+
+				<div class="bg-base-200 p-4 rounded-lg mb-4">
+					<div class="flex justify-between items-center mb-2">
+						<span class="text-base-content/70">Price per hour:</span>
+						<span>€{pricePerHour.toFixed(2)}</span>
+					</div>
+					<div class="flex justify-between items-center mb-2">
+						<span class="text-base-content/70">Duration:</span>
+						<span>{duration} hour(s)</span>
+					</div>
+					<div class="divider my-2"></div>
+					<div class="flex justify-between items-center">
+						<span class="font-semibold">Total:</span>
+						<span class="text-xl font-bold text-primary">€{totalCost.toFixed(2)}</span>
+					</div>
+				</div>
+
+				<div class="modal-action">
+					<button class="btn btn-ghost" onclick={closeModal} disabled={loading}>
+						Cancel
+					</button>
+					<button
+						class="btn btn-primary"
+						onclick={handleSubmit}
+						disabled={loading || !startTime || !isValidCost}
+					>
+						{#if loading}
+							<span class="loading loading-spinner loading-sm"></span>
+						{/if}
+						Reserve
+					</button>
 				</div>
 			{/if}
-
-			<div class="form-control mb-4">
-				<label class="label" for="startTime">
-					<span class="label-text">Start Time</span>
-				</label>
-				<input
-					id="startTime"
-					type="datetime-local"
-					class="input input-bordered"
-					bind:value={startTime}
-					min={minStartTime}
-					required
-				/>
-			</div>
-
-			<div class="form-control mb-4">
-				<label class="label" for="duration">
-					<span class="label-text">Duration (hours)</span>
-				</label>
-				<select id="duration" class="select select-bordered" bind:value={duration}>
-					<option value={1}>1 hour</option>
-					<option value={2}>2 hours</option>
-					<option value={3}>3 hours</option>
-					<option value={4}>4 hours</option>
-					<option value={6}>6 hours</option>
-					<option value={8}>8 hours</option>
-					<option value={12}>12 hours</option>
-					<option value={24}>24 hours</option>
-				</select>
-			</div>
-
-			<div class="bg-base-200 p-4 rounded-lg mb-4">
-				<div class="flex justify-between items-center mb-2">
-					<span class="font-semibold">Estimated Total:</span>
-					<span class="text-lg font-bold">{totalCost} EUR</span>
-				</div>
-				<p class="text-sm text-base-content/70">
-					Final pricing will be confirmed upon reservation completion.
-				</p>
-			</div>
-
-			<div class="modal-action">
-				<button class="btn btn-ghost" onclick={closeModal} disabled={loading}>
-					Cancel
-				</button>
-				<button
-					class="btn btn-primary"
-					onclick={handleSubmit}
-					disabled={loading || !startTime || !isValidCost}
-				>
-					{#if loading}
-						<span class="loading loading-spinner loading-sm"></span>
-					{/if}
-					Reserve
-				</button>
-			</div>
 		</div>
 	</div>
 {/if}
