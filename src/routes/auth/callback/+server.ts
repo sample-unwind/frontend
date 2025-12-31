@@ -143,14 +143,14 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 			});
 		}
 
-		// Store ID token for user info
+		// Store ID token for user info (extended lifetime for logout functionality)
 		if (tokens.id_token) {
 			cookies.set('id_token', tokens.id_token, {
 				path: '/',
 				httpOnly: true,
 				secure: true,
 				sameSite: 'lax',
-				maxAge: tokens.expires_in || 3600
+				maxAge: 60 * 60 * 24 // 24 hours (instead of tokens.expires_in || 3600)
 			});
 		}
 

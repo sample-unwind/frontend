@@ -4,7 +4,7 @@ import type { RequestHandler } from './$types';
 
 // User service API base URL (internal cluster service or external URL)
 const USER_SERVICE_URL =
-	env.USER_SERVICE_URL || 'https://user-service:8000';
+	env.USER_SERVICE_URL || 'https://parkora.crn.si/api/v1/user';
 
 export const POST: RequestHandler = async ({ request, locals }) => {
 	// In production, check authentication

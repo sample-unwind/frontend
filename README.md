@@ -108,10 +108,9 @@ npm run dev -- --open
 1. User visits `/register` page
 2. Page automatically redirects to Keycloak registration endpoint
 3. User completes registration in Keycloak's built-in registration form
-4. After successful registration, user is redirected back to `/login`
-5. User can then log in using their new credentials
-6. During login callback, user record is automatically created in user-service
-7. User is redirected to home page with authenticated session
+4. After successful registration, Keycloak redirects to `/auth/callback` with authorization code
+5. Callback handler exchanges code for tokens and creates user record in user-service
+6. User is redirected to home page with authenticated session
 
 ### Logout Flow
 

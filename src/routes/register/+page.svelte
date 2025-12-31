@@ -3,8 +3,8 @@
 	import { onMount } from 'svelte';
 
 	onMount(() => {
-		// Redirect to Keycloak registration page
-		window.location.href = 'https://keycloak.parkora.crn.si/auth/realms/parkora/protocol/openid-connect/registrations?client_id=frontend-app&redirect_uri=https://parkora.crn.si/login&response_type=code&scope=openid%20profile%20email';
+		// Redirect directly to Keycloak registration page with correct callback URI
+		window.location.href = 'https://keycloak.parkora.crn.si/auth/realms/parkora/protocol/openid-connect/registrations?client_id=frontend-app&redirect_uri=https://parkora.crn.si/auth/callback&response_type=code&scope=openid%20profile%20email';
 	});
 </script>
 
