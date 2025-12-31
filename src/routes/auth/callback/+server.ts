@@ -1,8 +1,9 @@
 import { redirect, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import * as client from 'openid-client';
 import { getOIDCConfig, exchangeCodeForTokens } from '$lib/server/auth';
 
-async function createUserIfNotExists(idToken: string, accessToken: string) {
+async function createUserIfNotExists(idToken: string, accessToken: string, fetchFn: typeof fetch) {
 	try {
 		// Decode ID token to get user info
 		const payload = idToken.split('.')[1];
@@ -25,7 +26,7 @@ async function createUserIfNotExists(idToken: string, accessToken: string) {
 			variables: { keycloakUserId: userId }
 		};
 
-		const checkResponse = await fetch('/_internal/user-proxy', {
+		const checkResponse = await fetchFn('/_internal/user-proxy', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -60,7 +61,7 @@ async function createUserIfNotExists(idToken: string, accessToken: string) {
 			}
 		};
 
-		const createResponse = await fetch('/_internal/user-proxy', {
+		const createResponse = await fetchFn('/_internal/user-proxy', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -80,7 +81,8 @@ async function createUserIfNotExists(idToken: string, accessToken: string) {
 	}
 }
 
-export const GET: RequestHandler = async ({ url, cookies }) => {
+export const GET: RequestHandler = async (event) => {
+	const { url, cookies, fetch } = event;
 	const code = url.searchParams.get('code');
 	const state = url.searchParams.get('state');
 	const errorParam = url.searchParams.get('error');
@@ -90,36 +92,54 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 		throw error(400, errorDescription);
 	}
 
-	if (!code || !state) {
-		throw error(400, 'Missing code or state parameter');
+	if (!code) {
+		throw error(400, 'Missing code parameter');
 	}
 
 	const storedState = cookies.get('oauth_state');
 	const codeVerifier = cookies.get('code_verifier');
 
-	if (!storedState || state !== storedState) {
-		throw error(400, 'Invalid state parameter');
+	// For login flows, validate state if it was set up
+	// For registration flows with prompt=create, Keycloak does not return state
+	if (storedState && state) {
+		// Login flow with both stored state and URL state - validate
+		if (state !== storedState) {
+			throw error(400, 'Invalid state parameter');
+		}
 	}
+	// Registration flows or flows without state proceed without validation
 
-	if (!codeVerifier) {
-		throw error(400, 'Missing code verifier');
+	// Clear the temporary cookies if they exist
+	if (storedState) {
+		cookies.delete('oauth_state', { path: '/' });
 	}
-
-	// Clear the temporary cookies
-	cookies.delete('oauth_state', { path: '/' });
-	cookies.delete('code_verifier', { path: '/' });
+	if (codeVerifier) {
+		cookies.delete('code_verifier', { path: '/' });
+	}
 
 	try {
 		const oidcConfig = await getOIDCConfig();
 		const redirectUri = `${url.origin}/auth/callback`;
 
-		const tokens = await exchangeCodeForTokens(
-			oidcConfig,
-			url,
-			storedState,
-			codeVerifier,
-			redirectUri
-		);
+		// Handle PKCE exchange based on what's available
+		let tokens;
+		if (codeVerifier) {
+			// Login flow with PKCE
+			tokens = await exchangeCodeForTokens(
+				oidcConfig,
+				url,
+				storedState || state || '', // Use available state
+				codeVerifier,
+				redirectUri
+			);
+		} else {
+			// Registration flow without PKCE (fallback)
+			const expectedState = storedState || state || undefined;
+			tokens = await client.authorizationCodeGrant(oidcConfig, url, {
+				expectedState,
+				idTokenExpected: true
+			});
+		}
 
 		// Store access token in cookie
 		if (tokens.access_token) {
@@ -156,7 +176,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 
 		// Create user in user-service if they don't exist
 		if (tokens.id_token && tokens.access_token) {
-			await createUserIfNotExists(tokens.id_token, tokens.access_token);
+			await createUserIfNotExists(tokens.id_token, tokens.access_token, fetch);
 		}
 	} catch (err) {
 		console.error('Token exchange error:', err);

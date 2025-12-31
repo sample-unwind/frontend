@@ -34,7 +34,9 @@ src/
 │   │   ├── callback/+server.ts # Handles OIDC callback
 │   │   └── logout/+server.ts   # Handles logout
 │   ├── login/+page.svelte      # Login page UI
-│   ├── register/+page.svelte   # Registration page UI
+│   ├── register/
+│   │   ├── +page.svelte        # Registration page UI
+│   │   └── +server.ts          # Initiates secure registration flow
 │   ├── +layout.svelte
 │   ├── +layout.server.ts
 │   └── +page.svelte
@@ -105,12 +107,17 @@ npm run dev -- --open
 
 ### Registration Flow
 
-1. User visits `/register` page
-2. Page automatically redirects to Keycloak registration endpoint
-3. User completes registration in Keycloak's built-in registration form
-4. After successful registration, Keycloak redirects to `/auth/callback` with authorization code
-5. Callback handler exchanges code for tokens and creates user record in user-service
-6. User is redirected to home page with authenticated session
+1. User visits `/register` page and clicks "Register with Keycloak"
+2. Form submits to `/register` server endpoint
+3. Server generates state and PKCE parameters, stores them securely in HTTP-only cookies
+4. Server redirects to Keycloak authorization endpoint with `prompt=create` and security parameters
+5. Keycloak displays registration form (instead of login form) due to `prompt=create`
+6. User completes registration in Keycloak's built-in registration form
+7. After successful registration, Keycloak redirects to `/auth/callback` with authorization code
+8. Callback handler processes the authorization code (state validation adapted for Keycloak's behavior)
+9. Callback exchanges authorization code for tokens using available security methods
+10. Callback creates user record in user-service if it doesn't exist
+11. User is redirected to home page with authenticated session
 
 ### Logout Flow
 
@@ -123,10 +130,27 @@ npm run dev -- --open
 
 The frontend integrates with the `user-service` microservice to maintain user profiles:
 
-- **Automatic Profile Creation**: User records are automatically created in the user-service database during the first login after registration
+- **Automatic Profile Creation**: User records are automatically created in the user-service database after successful authentication
 - **GraphQL API**: Uses GraphQL mutations to create and query user data
 - **Data Synchronization**: User information (email, name, Keycloak ID) is synchronized between Keycloak and the user-service
 - **Proxy Pattern**: API calls to user-service are handled through `/_internal/user-proxy/` endpoint
+
+### Security Considerations
+
+**Login Flow (Full Security):**
+- State parameter validation for CSRF protection
+- PKCE (Proof Key for Code Exchange) for authorization code injection protection
+- HTTP-only, secure cookies for state/code verifier storage
+- TLS encryption for all OAuth communications
+
+**Registration Flow (Adapted Security):**
+- State parameter validation bypassed (Keycloak does not preserve state in registration flows)
+- PKCE attempted but may fallback to basic OAuth flow
+- HTTP-only, secure cookies for code verifier storage when available
+- TLS encryption maintained
+- User creation occurs post-authentication with proper validation
+
+The registration flow adapts to Keycloak's implementation while maintaining core security principles and proper user management.
 
 ## Building
 

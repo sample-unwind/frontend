@@ -3,8 +3,16 @@
 	import { onMount } from 'svelte';
 
 	onMount(() => {
+		// Clear any existing OAuth state cookies from previous login attempts
+		// This prevents the callback from trying to validate state for registration flows
+		document.cookie = 'oauth_state=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;';
+		document.cookie = 'code_verifier=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;';
+
 		// Redirect directly to Keycloak registration page with correct callback URI
-		window.location.href = 'https://keycloak.parkora.crn.si/auth/realms/parkora/protocol/openid-connect/registrations?client_id=frontend-app&redirect_uri=https://parkora.crn.si/auth/callback&response_type=code&scope=openid%20profile%20email';
+		const redirectUri = window.location.origin + '/auth/callback';
+		const registrationUrl = `https://keycloak.parkora.crn.si/auth/realms/parkora/protocol/openid-connect/registrations?client_id=frontend-app&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=openid%20profile%20email`;
+		console.log('Redirecting to:', registrationUrl);
+		window.location.href = registrationUrl;
 	});
 </script>
 
