@@ -10,6 +10,10 @@
 			<a href="/auth/login" data-sveltekit-reload class="btn btn-primary w-full">
 				Sign in with Keycloak
 			</a>
+			<p class="text-sm text-base-content/70 mt-4">
+				Don't have an account?
+				<a href="/register" class="link link-primary">Register here</a>
+			</p>
 		</div>
 	</div>
 </div>

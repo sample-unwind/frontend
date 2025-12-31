@@ -18,9 +18,20 @@
 	let loading = $state(false);
 	let error = $state('');
 
-	// Calculate total cost
+	// Calculate total cost with validation
 	let totalCost = $derived(() => {
-		return (duration * pricePerHour).toFixed(2);
+		const cost = duration * pricePerHour;
+		// Ensure positive cost and reasonable range (max €1000 for 24 hours)
+		if (cost <= 0 || cost > 1000) {
+			return '0.00';
+		}
+		return cost.toFixed(2);
+	});
+
+	// Validation for form submission
+	let isValidCost = $derived(() => {
+		const cost = duration * pricePerHour;
+		return cost > 0 && cost <= 1000;
 	});
 
 	// Set minimum start time to now + 30 minutes
@@ -50,9 +61,6 @@
 		error = '';
 
 		try {
-			// For now, we'll use a mock user_id. In a real app, this would come from auth
-			const userId = 'mock-user-id'; // TODO: Get from auth context
-
 			const reservationData = {
 				query: `
 					mutation CreateReservation($input: CreateReservationInput!) {
@@ -143,10 +151,13 @@
 			</div>
 
 			<div class="bg-base-200 p-4 rounded-lg mb-4">
-				<div class="flex justify-between items-center">
-					<span class="font-semibold">Total Cost:</span>
+				<div class="flex justify-between items-center mb-2">
+					<span class="font-semibold">Estimated Total:</span>
 					<span class="text-lg font-bold">{totalCost} EUR</span>
 				</div>
+				<p class="text-sm text-base-content/70">
+					Final pricing will be confirmed upon reservation completion.
+				</p>
 			</div>
 
 			<div class="modal-action">
@@ -156,7 +167,7 @@
 				<button
 					class="btn btn-primary"
 					onclick={handleSubmit}
-					disabled={loading || !startTime}
+					disabled={loading || !startTime || !isValidCost}
 				>
 					{#if loading}
 						<span class="loading loading-spinner loading-sm"></span>

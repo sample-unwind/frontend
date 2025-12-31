@@ -2,6 +2,84 @@ import { redirect, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { getOIDCConfig, exchangeCodeForTokens } from '$lib/server/auth';
 
+async function createUserIfNotExists(idToken: string, accessToken: string) {
+	try {
+		// Decode ID token to get user info
+		const payload = idToken.split('.')[1];
+		const decoded = JSON.parse(Buffer.from(payload, 'base64').toString());
+
+		const userId = decoded.sub;
+		const email = decoded.email;
+		const firstName = decoded.given_name || decoded.name?.split(' ')[0] || '';
+		const lastName = decoded.family_name || decoded.name?.split(' ').slice(1).join(' ') || '';
+
+		// Check if user exists
+		const checkQuery = {
+			query: `
+				query UserByKeycloakId($keycloakUserId: String!) {
+					userByKeycloakId(keycloakUserId: $keycloakUserId) {
+						id
+					}
+				}
+			`,
+			variables: { keycloakUserId: userId }
+		};
+
+		const checkResponse = await fetch('/_internal/user-proxy', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${accessToken}`
+			},
+			body: JSON.stringify(checkQuery)
+		});
+
+		if (checkResponse.ok) {
+			const checkResult = await checkResponse.json();
+			if (checkResult.data?.userByKeycloakId) {
+				// User already exists
+				return;
+			}
+		}
+
+		// Create user
+		const createMutation = {
+			query: `
+				mutation CreateUser($email: String!, $firstName: String!, $lastName: String!, $keycloakUserId: String!) {
+					createUser(email: $email, firstName: $firstName, lastName: $lastName, keycloakUserId: $keycloakUserId) {
+						id
+						email
+					}
+				}
+			`,
+			variables: {
+				email,
+				firstName,
+				lastName,
+				keycloakUserId: userId
+			}
+		};
+
+		const createResponse = await fetch('/_internal/user-proxy', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${accessToken}`
+			},
+			body: JSON.stringify(createMutation)
+		});
+
+		if (createResponse.ok) {
+			const createResult = await createResponse.json();
+			console.log('User created:', createResult);
+		} else {
+			console.error('Failed to create user:', await createResponse.text());
+		}
+	} catch (err) {
+		console.error('Error in createUserIfNotExists:', err);
+	}
+}
+
 export const GET: RequestHandler = async ({ url, cookies }) => {
 	const code = url.searchParams.get('code');
 	const state = url.searchParams.get('state');
@@ -74,6 +152,11 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 				sameSite: 'lax',
 				maxAge: tokens.expires_in || 3600
 			});
+		}
+
+		// Create user in user-service if they don't exist
+		if (tokens.id_token && tokens.access_token) {
+			await createUserIfNotExists(tokens.id_token, tokens.access_token);
 		}
 	} catch (err) {
 		console.error('Token exchange error:', err);

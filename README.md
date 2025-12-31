@@ -11,7 +11,8 @@ SvelteKit frontend for the Parkora smart parking system.
 
 ## Features
 
-- Keycloak OIDC authentication with PKCE
+- Keycloak OIDC authentication with PKCE and user registration
+- User registration with automatic profile synchronization to user-service
 - Server-side session management via secure HTTP-only cookies
 - Responsive UI with DaisyUI components
 
@@ -24,11 +25,16 @@ src/
 │   │   └── auth.ts          # OIDC client configuration
 │   └── index.ts
 ├── routes/
+│   ├── _internal/
+│   │   ├── user-proxy/+server.ts    # GraphQL proxy for user-service
+│   │   ├── parking-proxy/+server.ts # GraphQL proxy for parking-service
+│   │   └── reservation-proxy/+server.ts # GraphQL proxy for reservation-service
 │   ├── auth/
 │   │   ├── login/+server.ts    # Initiates OIDC flow
 │   │   ├── callback/+server.ts # Handles OIDC callback
 │   │   └── logout/+server.ts   # Handles logout
 │   ├── login/+page.svelte      # Login page UI
+│   ├── register/+page.svelte   # Registration page UI
 │   ├── +layout.svelte
 │   ├── +layout.server.ts
 │   └── +page.svelte
@@ -45,6 +51,7 @@ The frontend is configured to use Keycloak for authentication:
 - **Keycloak URL**: `https://keycloak.parkora.crn.si/auth`
 - **Realm**: `parkora`
 - **Client**: `frontend-app` (public client)
+- **Registration**: Enabled via Keycloak's built-in registration endpoint
 - **Test Users**: `testuser1` / `password123`, `testuser2` / `password123`
 
 ### Required Keycloak Client Settings
@@ -92,8 +99,19 @@ npm run dev -- --open
 5. User redirected to Keycloak login page
 6. After successful login, Keycloak redirects to `/auth/callback`
 7. Server exchanges authorization code for tokens
-8. Tokens stored in secure HTTP-only cookies
-9. User redirected to home page (`/`)
+8. Server creates/updates user record in user-service via GraphQL
+9. Tokens stored in secure HTTP-only cookies
+10. User redirected to home page (`/`)
+
+### Registration Flow
+
+1. User visits `/register` page
+2. Page automatically redirects to Keycloak registration endpoint
+3. User completes registration in Keycloak's built-in registration form
+4. After successful registration, user is redirected back to `/login`
+5. User can then log in using their new credentials
+6. During login callback, user record is automatically created in user-service
+7. User is redirected to home page with authenticated session
 
 ### Logout Flow
 
@@ -101,6 +119,15 @@ npm run dev -- --open
 2. Server clears all auth cookies
 3. User redirected to Keycloak logout endpoint
 4. After logout, redirected back to home page
+
+### User Service Integration
+
+The frontend integrates with the `user-service` microservice to maintain user profiles:
+
+- **Automatic Profile Creation**: User records are automatically created in the user-service database during the first login after registration
+- **GraphQL API**: Uses GraphQL mutations to create and query user data
+- **Data Synchronization**: User information (email, name, Keycloak ID) is synchronized between Keycloak and the user-service
+- **Proxy Pattern**: API calls to user-service are handled through `/_internal/user-proxy/` endpoint
 
 ## Building
 
