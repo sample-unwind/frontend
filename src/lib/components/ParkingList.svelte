@@ -22,11 +22,11 @@
 	interface ReservationResult {
 		id: string;
 		status: string;
-		total_cost: number;
-		start_time: string;
-		end_time: string;
-		duration_hours: number;
-		parking_spot_id: string;
+		totalCost: number;
+		startTime: string;
+		endTime: string;
+		durationHours: number;
+		parkingSpotId: string;
 	}
 
 	let { parkingSpots, user }: { parkingSpots: ParkingSpot[]; user?: User } = $props();
@@ -57,8 +57,8 @@
 		console.log('Reservation created:', reservation);
 
 		// Show success message with price if available
-		if (reservation?.total_cost !== undefined) {
-			successMessage = `Reservation confirmed! Total: €${reservation.total_cost.toFixed(2)}`;
+		if (reservation?.totalCost !== undefined) {
+			successMessage = `Reservation confirmed! Total: €${reservation.totalCost.toFixed(2)}`;
 		} else {
 			successMessage = 'Reservation created successfully!';
 		}

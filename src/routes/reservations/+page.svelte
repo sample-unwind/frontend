@@ -8,12 +8,12 @@
 	interface Reservation {
 		id: string;
 		status: string;
-		total_cost: number;
-		start_time: string;
-		end_time: string;
-		duration_hours: number;
-		parking_spot_id: string;
-		created_at: string;
+		totalCost: number;
+		startTime: string;
+		endTime: string;
+		durationHours: number;
+		parkingSpotId: string;
+		createdAt: string;
 	}
 
 	let reservations = $state<Reservation[]>([]);
@@ -179,7 +179,7 @@
 		<CancelConfirmationModal
 			isOpen={showCancelModal}
 			reservationId={reservationToCancel?.id ?? ''}
-			parkingSpotName={reservationToCancel?.parking_spot_id ?? ''}
+			parkingSpotName={reservationToCancel?.parkingSpotId ?? ''}
 			onConfirm={confirmCancel}
 			onClose={closeCancelModal}
 			loading={cancelLoading}

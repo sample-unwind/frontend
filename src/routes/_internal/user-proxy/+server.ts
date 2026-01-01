@@ -6,6 +6,9 @@ import type { RequestHandler } from './$types';
 const USER_SERVICE_URL =
 	env.USER_SERVICE_URL || 'https://parkora.crn.si/api/v1/user';
 
+// Default tenant ID for multitenancy
+const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000001';
+
 export const POST: RequestHandler = async ({ request, locals }) => {
 	// In production, check authentication
 	// if (!locals.isAuthenticated) {
@@ -20,8 +23,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
+				'X-Tenant-ID': DEFAULT_TENANT_ID
 			},
-			body: JSON.stringify(body),
+			body: JSON.stringify(body)
 		});
 
 		if (!response.ok) {

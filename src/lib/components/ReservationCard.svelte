@@ -2,12 +2,12 @@
 	interface Reservation {
 		id: string;
 		status: string;
-		total_cost: number;
-		start_time: string;
-		end_time: string;
-		duration_hours: number;
-		parking_spot_id: string;
-		created_at: string;
+		totalCost: number;
+		startTime: string;
+		endTime: string;
+		durationHours: number;
+		parkingSpotId: string;
+		createdAt: string;
 	}
 
 	interface Props {
@@ -48,7 +48,7 @@
 <div class="card bg-base-100 shadow-md">
 	<div class="card-body">
 		<div class="flex justify-between items-start">
-			<h2 class="card-title text-lg">{reservation.parking_spot_id}</h2>
+			<h2 class="card-title text-lg">{reservation.parkingSpotId}</h2>
 			<span class="badge {getStatusBadgeClass(reservation.status)}">
 				{reservation.status}
 			</span>
@@ -57,19 +57,19 @@
 		<div class="grid grid-cols-2 gap-2 text-sm mt-2">
 			<div>
 				<span class="text-base-content/70">Start:</span>
-				<span class="ml-1">{formatDateTime(reservation.start_time)}</span>
+				<span class="ml-1">{formatDateTime(reservation.startTime)}</span>
 			</div>
 			<div>
 				<span class="text-base-content/70">End:</span>
-				<span class="ml-1">{formatDateTime(reservation.end_time)}</span>
+				<span class="ml-1">{formatDateTime(reservation.endTime)}</span>
 			</div>
 			<div>
 				<span class="text-base-content/70">Duration:</span>
-				<span class="ml-1">{reservation.duration_hours}h</span>
+				<span class="ml-1">{reservation.durationHours}h</span>
 			</div>
 			<div>
 				<span class="text-base-content/70">Total:</span>
-				<span class="ml-1 font-semibold">€{reservation.total_cost.toFixed(2)}</span>
+				<span class="ml-1 font-semibold">€{reservation.totalCost.toFixed(2)}</span>
 			</div>
 		</div>
 

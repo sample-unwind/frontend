@@ -2,9 +2,12 @@ import { json } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 import type { RequestHandler } from './$types';
 
-// Reservation service API base URL (internal cluster service)
+// Reservation service API base URL (internal cluster service or external URL)
 const RESERVATION_SERVICE_URL =
-	env.RESERVATION_SERVICE_URL || 'http://reservation-service.parkora.svc.cluster.local';
+	env.RESERVATION_SERVICE_URL || 'https://parkora.crn.si/api/v1/reservation';
+
+// Log the configured URL on startup
+console.log('Reservation service URL configured as:', RESERVATION_SERVICE_URL);
 
 // Default tenant ID for multitenancy
 const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000001';
@@ -25,12 +28,12 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 					reservationsByUser(userId: $userId, includeCompleted: $includeCompleted) {
 						id
 						status
-						total_cost
-						start_time
-						end_time
-						duration_hours
-						parking_spot_id
-						created_at
+						totalCost
+						startTime
+						endTime
+						durationHours
+						parkingSpotId
+						createdAt
 					}
 				}
 			`,
@@ -72,9 +75,11 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
 	try {
 		const body = await request.json();
+		const targetUrl = `${RESERVATION_SERVICE_URL}/graphql`;
+		console.log('Reservation proxy POST to:', targetUrl);
 
 		// Forward the request to reservation-service GraphQL endpoint
-		const response = await fetch(`${RESERVATION_SERVICE_URL}/graphql`, {
+		const response = await fetch(targetUrl, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -84,8 +89,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		});
 
 		if (!response.ok) {
+			const errorText = await response.text();
 			console.error(
-				`Reservation service returned ${response.status}: ${await response.text()}`
+				`Reservation service returned ${response.status}: ${errorText}`
 			);
 			return json(
 				{ error: 'Failed to create reservation' },

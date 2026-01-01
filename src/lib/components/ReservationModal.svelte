@@ -12,11 +12,11 @@
 	interface ReservationResult {
 		id: string;
 		status: string;
-		total_cost: number;
-		start_time: string;
-		end_time: string;
-		duration_hours: number;
-		parking_spot_id: string;
+		totalCost: number;
+		startTime: string;
+		endTime: string;
+		durationHours: number;
+		parkingSpotId: string;
 	}
 
 	let {
@@ -88,21 +88,21 @@
 						createReservation(input: $input) {
 							id
 							status
-							total_cost
-							start_time
-							end_time
-							duration_hours
-							parking_spot_id
+							totalCost
+							startTime
+							endTime
+							durationHours
+							parkingSpotId
 						}
 					}
 				`,
 				variables: {
 					input: {
-						user_id: userId,
-						parking_spot_id: parkingSpotId,
-						start_time: new Date(startTime).toISOString(),
-						duration_hours: duration,
-						total_cost: totalCost
+						userId,
+						parkingSpotId,
+						startTime: new Date(startTime).toISOString(),
+						durationHours: duration,
+						totalCost: totalCost
 					}
 				}
 			};
@@ -169,20 +169,20 @@
 						</div>
 						<div class="flex justify-between">
 							<span class="text-base-content/70">Start:</span>
-							<span>{formatDateTime(reservationResult.start_time)}</span>
+							<span>{formatDateTime(reservationResult.startTime)}</span>
 						</div>
 						<div class="flex justify-between">
 							<span class="text-base-content/70">End:</span>
-							<span>{formatDateTime(reservationResult.end_time)}</span>
+							<span>{formatDateTime(reservationResult.endTime)}</span>
 						</div>
 						<div class="flex justify-between">
 							<span class="text-base-content/70">Duration:</span>
-							<span>{reservationResult.duration_hours} hour(s)</span>
+							<span>{reservationResult.durationHours} hour(s)</span>
 						</div>
 						<div class="divider my-2"></div>
 						<div class="flex justify-between text-lg font-bold">
 							<span>Total:</span>
-							<span class="text-primary">€{reservationResult.total_cost.toFixed(2)}</span>
+							<span class="text-primary">€{reservationResult.totalCost.toFixed(2)}</span>
 						</div>
 					</div>
 
