@@ -34,6 +34,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 						durationHours
 						parkingSpotId
 						createdAt
+						transactionId
 					}
 				}
 			`,

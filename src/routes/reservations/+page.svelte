@@ -14,6 +14,7 @@
 		durationHours: number;
 		parkingSpotId: string;
 		createdAt: string;
+		transactionId?: string | null;
 	}
 
 	let reservations = $state<Reservation[]>([]);
@@ -26,6 +27,9 @@
 	let reservationToCancel = $state<Reservation | null>(null);
 	let cancelLoading = $state(false);
 	let successMessage = $state('');
+
+	// Payment state
+	let paymentLoading = $state<string | null>(null); // ID of reservation being paid
 
 	async function fetchReservations() {
 		loading = true;
@@ -60,6 +64,59 @@
 		reservationToCancel = reservations.find((r) => r.id === id) || null;
 		if (reservationToCancel) {
 			showCancelModal = true;
+		}
+	}
+
+	async function handlePayClick(id: string) {
+		paymentLoading = id;
+		error = null;
+
+		try {
+			const response = await fetch('/_internal/reservation-proxy', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					query: `
+						mutation PayReservation($id: String!) {
+							payReservation(id: $id) {
+								success
+								transactionId
+								message
+								errorCode
+							}
+						}
+					`,
+					variables: { id }
+				})
+			});
+
+			const result = await response.json();
+
+			if (!response.ok) {
+				throw new Error(result.error || 'Failed to process payment');
+			}
+
+			if (result.errors) {
+				throw new Error(result.errors[0].message);
+			}
+
+			const paymentResult = result.data?.payReservation;
+
+			if (paymentResult?.success) {
+				successMessage = `Payment successful! Transaction ID: ${paymentResult.transactionId}`;
+				// Clear success message after 10 seconds
+				setTimeout(() => {
+					successMessage = '';
+				}, 10000);
+				// Refresh the list
+				await fetchReservations();
+			} else {
+				throw new Error(paymentResult?.message || 'Payment failed');
+			}
+		} catch (err) {
+			error = err instanceof Error ? err.message : 'Failed to process payment';
+		} finally {
+			paymentLoading = null;
 		}
 	}
 
@@ -171,7 +228,12 @@
 		{:else}
 			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 				{#each reservations as reservation (reservation.id)}
-					<ReservationCard {reservation} onCancel={handleCancelClick} />
+					<ReservationCard
+						{reservation}
+						onCancel={handleCancelClick}
+						onPay={handlePayClick}
+						isPaymentLoading={paymentLoading === reservation.id}
+					/>
 				{/each}
 			</div>
 		{/if}

@@ -8,14 +8,17 @@
 		durationHours: number;
 		parkingSpotId: string;
 		createdAt: string;
+		transactionId?: string | null;
 	}
 
 	interface Props {
 		reservation: Reservation;
 		onCancel: (id: string) => void;
+		onPay?: (id: string) => void;
+		isPaymentLoading?: boolean;
 	}
 
-	let { reservation, onCancel }: Props = $props();
+	let { reservation, onCancel, onPay, isPaymentLoading = false }: Props = $props();
 
 	function getStatusBadgeClass(status: string): string {
 		switch (status) {
@@ -43,6 +46,8 @@
 	let canCancel = $derived(
 		reservation.status === 'PENDING' || reservation.status === 'CONFIRMED'
 	);
+
+	let canPay = $derived(reservation.status === 'PENDING' && onPay);
 </script>
 
 <div class="card bg-base-100 shadow-md">
@@ -69,16 +74,41 @@
 			</div>
 			<div>
 				<span class="text-base-content/70">Total:</span>
-				<span class="ml-1 font-semibold">€{reservation.totalCost.toFixed(2)}</span>
+				<span class="ml-1 font-semibold">{reservation.totalCost.toFixed(2)} EUR</span>
 			</div>
 		</div>
 
-		{#if canCancel}
-			<div class="card-actions justify-end mt-4">
-				<button class="btn btn-error btn-sm" onclick={() => onCancel(reservation.id)}>
-					Cancel Reservation
-				</button>
+		{#if reservation.transactionId}
+			<div class="mt-2 p-2 bg-success/10 rounded-lg">
+				<span class="text-xs text-base-content/70">Transaction ID:</span>
+				<code class="text-xs ml-1 font-mono">{reservation.transactionId}</code>
 			</div>
 		{/if}
+
+		<div class="card-actions justify-end mt-4 gap-2">
+			{#if canPay}
+				<button
+					class="btn btn-primary btn-sm"
+					onclick={() => onPay?.(reservation.id)}
+					disabled={isPaymentLoading}
+				>
+					{#if isPaymentLoading}
+						<span class="loading loading-spinner loading-xs"></span>
+						Processing...
+					{:else}
+						Pay Now
+					{/if}
+				</button>
+			{/if}
+			{#if canCancel}
+				<button
+					class="btn btn-error btn-sm btn-outline"
+					onclick={() => onCancel(reservation.id)}
+					disabled={isPaymentLoading}
+				>
+					Cancel
+				</button>
+			{/if}
+		</div>
 	</div>
 </div>
