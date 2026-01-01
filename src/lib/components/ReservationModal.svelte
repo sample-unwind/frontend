@@ -1,26 +1,33 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
-
 	interface Props {
 		parkingSpotId: string;
 		parkingSpotName: string;
 		pricePerHour: number;
 		userId: string;
 		isOpen: boolean;
+		onClose: () => void;
+		onReservationCreated: (reservation: ReservationResult) => void;
 	}
 
 	interface ReservationResult {
 		id: string;
 		status: string;
-		totalCost: number;
-		startTime: string;
-		endTime: string;
-		durationHours: number;
+		total_cost: number;
+		start_time: string;
+		end_time: string;
+		duration_hours: number;
+		parking_spot_id: string;
 	}
 
-	let { parkingSpotId, parkingSpotName, pricePerHour, userId, isOpen }: Props = $props();
-
-	const dispatch = createEventDispatcher();
+	let {
+		parkingSpotId,
+		parkingSpotName,
+		pricePerHour,
+		userId,
+		isOpen,
+		onClose,
+		onReservationCreated
+	}: Props = $props();
 
 	let startTime = $state('');
 	let duration = $state(1);
@@ -34,13 +41,26 @@
 	// Validation for form submission
 	let isValidCost = $derived(totalCost > 0 && totalCost <= 1000);
 
-	// Set minimum start time to now + 30 minutes
-	const now = new Date();
-	now.setMinutes(now.getMinutes() + 30);
-	const minStartTime = now.toISOString().slice(0, 16); // YYYY-MM-DDTHH:MM format
+	// Prefill start time when modal opens
+	$effect(() => {
+		if (isOpen && !startTime) {
+			const now = new Date();
+			// Round up to next 15 minutes, then add 30 minutes
+			const minutes = Math.ceil(now.getMinutes() / 15) * 15 + 30;
+			now.setMinutes(minutes, 0, 0);
+			startTime = now.toISOString().slice(0, 16);
+		}
+	});
+
+	// Get minimum start time (now + 15 minutes)
+	let minStartTime = $derived.by(() => {
+		const now = new Date();
+		now.setMinutes(now.getMinutes() + 15);
+		return now.toISOString().slice(0, 16);
+	});
 
 	function closeModal() {
-		dispatch('close');
+		onClose();
 		resetForm();
 	}
 
@@ -68,21 +88,21 @@
 						createReservation(input: $input) {
 							id
 							status
-							totalCost
-							startTime
-							endTime
-							durationHours
-							parkingSpotId
+							total_cost
+							start_time
+							end_time
+							duration_hours
+							parking_spot_id
 						}
 					}
 				`,
 				variables: {
 					input: {
-						userId,
-						parkingSpotId,
-						startTime: new Date(startTime).toISOString(),
-						durationHours: duration,
-						totalCost: totalCost
+						user_id: userId,
+						parking_spot_id: parkingSpotId,
+						start_time: new Date(startTime).toISOString(),
+						duration_hours: duration,
+						total_cost: totalCost
 					}
 				}
 			};
@@ -108,8 +128,8 @@
 			// Store the reservation result for display
 			reservationResult = result.data.createReservation;
 
-			// Dispatch event with reservation data
-			dispatch('reservationCreated', reservationResult);
+			// Notify parent component
+			onReservationCreated(reservationResult!);
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Failed to create reservation';
 		} finally {
@@ -149,20 +169,20 @@
 						</div>
 						<div class="flex justify-between">
 							<span class="text-base-content/70">Start:</span>
-							<span>{formatDateTime(reservationResult.startTime)}</span>
+							<span>{formatDateTime(reservationResult.start_time)}</span>
 						</div>
 						<div class="flex justify-between">
 							<span class="text-base-content/70">End:</span>
-							<span>{formatDateTime(reservationResult.endTime)}</span>
+							<span>{formatDateTime(reservationResult.end_time)}</span>
 						</div>
 						<div class="flex justify-between">
 							<span class="text-base-content/70">Duration:</span>
-							<span>{reservationResult.durationHours} hour(s)</span>
+							<span>{reservationResult.duration_hours} hour(s)</span>
 						</div>
 						<div class="divider my-2"></div>
 						<div class="flex justify-between text-lg font-bold">
 							<span>Total:</span>
-							<span class="text-primary">€{reservationResult.totalCost.toFixed(2)}</span>
+							<span class="text-primary">€{reservationResult.total_cost.toFixed(2)}</span>
 						</div>
 					</div>
 

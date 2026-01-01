@@ -19,6 +19,16 @@
 		name: string;
 	}
 
+	interface ReservationResult {
+		id: string;
+		status: string;
+		total_cost: number;
+		start_time: string;
+		end_time: string;
+		duration_hours: number;
+		parking_spot_id: string;
+	}
+
 	let { parkingSpots, user }: { parkingSpots: ParkingSpot[]; user?: User } = $props();
 
 	let selectedSpot = $state<ParkingSpot | null>(null);
@@ -43,17 +53,16 @@
 		showReservationModal = true;
 	}
 
-	function handleReservationCreated(event: CustomEvent) {
-		const reservation = event.detail;
+	function handleReservationCreated(reservation: ReservationResult) {
 		console.log('Reservation created:', reservation);
-		
+
 		// Show success message with price if available
-		if (reservation?.totalCost !== undefined) {
-			successMessage = `Reservation confirmed! Total: €${reservation.totalCost.toFixed(2)}`;
+		if (reservation?.total_cost !== undefined) {
+			successMessage = `Reservation confirmed! Total: €${reservation.total_cost.toFixed(2)}`;
 		} else {
 			successMessage = 'Reservation created successfully!';
 		}
-		
+
 		// Clear message after 5 seconds
 		setTimeout(() => {
 			successMessage = '';
@@ -82,9 +91,9 @@
 						<span class="badge badge-neutral">Closed</span>
 					{/if}
 				</div>
-				
+
 				<p class="text-sm text-base-content/70">{spot.address}</p>
-				
+
 				<div class="flex items-center gap-2 mt-2">
 					<span class="badge {getAvailabilityClass(spot.availableSpots, spot.totalSpots)}">
 						{getAvailabilityText(spot.availableSpots, spot.totalSpots)}
@@ -119,12 +128,12 @@
 
 {#if selectedSpot && user}
 	<ReservationModal
-		parkingSpotId={selectedSpot.id}
+		parkingSpotId={selectedSpot.name}
 		parkingSpotName={selectedSpot.name}
 		pricePerHour={selectedSpot.pricePerHour}
 		userId={user.id}
 		isOpen={showReservationModal}
-		on:close={closeModal}
-		on:reservationCreated={handleReservationCreated}
+		onClose={closeModal}
+		onReservationCreated={handleReservationCreated}
 	/>
 {/if}
