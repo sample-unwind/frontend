@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { marked } from 'marked';
+	import { marked, Renderer } from 'marked';
 	import { onMount } from 'svelte';
 
 	interface DocFile {
@@ -21,6 +21,36 @@
 	let error = $state<string | null>(null);
 
 	const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/sample-unwind/docs/main';
+	const GITHUB_BLOB_BASE = 'https://github.com/sample-unwind/docs/blob/main';
+
+	// Custom renderer to handle links
+	const renderer = new Renderer();
+	renderer.link = ({ href, title, text }) => {
+		// Handle internal .md links - make them clickable to switch docs
+		if (href && href.endsWith('.md') && !href.startsWith('http')) {
+			const docFile = docFiles.find((d) => d.filename === href);
+			if (docFile) {
+				// Internal doc link - use data attribute for JS handling
+				return `<a href="#" data-doc="${docFile.name}" class="internal-doc-link" title="${title || ''}">${text}</a>`;
+			}
+		}
+
+		// Handle internal .puml diagram links - link to GitHub blob view
+		if (href && href.endsWith('.puml') && !href.startsWith('http')) {
+			const githubUrl = `${GITHUB_BLOB_BASE}/${href}`;
+			return `<a href="${githubUrl}" target="_blank" rel="noopener noreferrer" title="${title || ''}">${text}</a>`;
+		}
+
+		// External links - open in new tab
+		if (href && href.startsWith('http')) {
+			return `<a href="${href}" target="_blank" rel="noopener noreferrer" title="${title || ''}">${text}</a>`;
+		}
+
+		// Fallback
+		return `<a href="${href}" title="${title || ''}">${text}</a>`;
+	};
+
+	marked.use({ renderer });
 
 	async function loadDocument(doc: DocFile) {
 		loading = true;
@@ -39,6 +69,20 @@
 			content = '';
 		} finally {
 			loading = false;
+		}
+	}
+
+	function handleDocClick(event: MouseEvent) {
+		const target = event.target as HTMLElement;
+		if (target.classList.contains('internal-doc-link')) {
+			event.preventDefault();
+			const docName = target.getAttribute('data-doc');
+			if (docName) {
+				const doc = docFiles.find((d) => d.name === docName);
+				if (doc) {
+					loadDocument(doc);
+				}
+			}
 		}
 	}
 
@@ -130,7 +174,13 @@
 								<span>{error}</span>
 							</div>
 						{:else}
-							<article class="prose prose-sm md:prose-base max-w-none">
+							<!-- svelte-ignore a11y_click_events_have_key_events -->
+							<!-- svelte-ignore a11y_no_static_element_interactions -->
+							<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+							<article
+								class="prose prose-sm md:prose-base max-w-none"
+								onclick={handleDocClick}
+							>
 								{@html content}
 							</article>
 						{/if}
