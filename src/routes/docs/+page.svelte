@@ -149,7 +149,8 @@
 		<div class="flex-1">
 			<a href="/" class="btn btn-ghost text-xl">Parkora</a>
 		</div>
-		<div class="flex-none">
+		<div class="flex-none gap-2">
+			<a href="/docs/technical" class="btn btn-ghost btn-sm">Technical Docs</a>
 			<a href="/" class="btn btn-ghost btn-sm">Back to App</a>
 		</div>
 	</div>
@@ -265,6 +266,28 @@
 						<span class="badge badge-accent">EVENTS</span>
 						<span class="text-sm text-base-content/70">Message queue consumer</span>
 					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Technical Documentation -->
+		<div class="card bg-primary text-primary-content shadow-md mt-8">
+			<div class="card-body">
+				<h3 class="card-title text-lg">Tehnična dokumentacija</h3>
+				<p class="text-sm opacity-90">
+					Podrobna dokumentacija arhitekture sistema, navodila za namestitev in opis uporabljenih
+					vzorcev (CQRS, Event Sourcing, Circuit Breaker, API Gateway, gRPC, RabbitMQ).
+				</p>
+				<div class="card-actions justify-start mt-2">
+					<a href="/docs/technical" class="btn btn-sm">Odpri dokumentacijo</a>
+					<a
+						href="https://github.com/sample-unwind/docs"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="btn btn-sm btn-ghost"
+					>
+						GitHub
+					</a>
 				</div>
 			</div>
 		</div>

@@ -24,6 +24,7 @@
 	"dependencies": {
 		"@tailwindcss/vite": "^4.1.18",
 		"daisyui": "^5.5.14",
+		"marked": "^17.0.1",
 		"openid-client": "^6.8.1",
 		"tailwindcss": "^4.1.18"
 	}
