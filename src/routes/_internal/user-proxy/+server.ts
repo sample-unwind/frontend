@@ -10,10 +10,15 @@ const USER_SERVICE_URL =
 const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000001';
 
 export const POST: RequestHandler = async ({ request, locals }) => {
-	// In production, check authentication
-	// if (!locals.isAuthenticated) {
-	// 	return json({ error: 'Unauthorized' }, { status: 401 });
-	// }
+	// Get Authorization header from incoming request (for callback flow)
+	// or use locals.accessToken (for authenticated session flow)
+	const incomingAuthHeader = request.headers.get('Authorization');
+	const authHeader = incomingAuthHeader || (locals.accessToken ? `Bearer ${locals.accessToken}` : null);
+
+	// Require authentication - either from incoming header or session
+	if (!authHeader) {
+		return json({ error: 'Unauthorized' }, { status: 401 });
+	}
 
 	try {
 		const body = await request.json();
@@ -23,7 +28,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
-				'X-Tenant-ID': DEFAULT_TENANT_ID
+				'X-Tenant-ID': DEFAULT_TENANT_ID,
+				'Authorization': authHeader
 			},
 			body: JSON.stringify(body)
 		});

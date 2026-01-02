@@ -29,14 +29,18 @@ interface ParkingSpot {
 }
 
 export const GET: RequestHandler = async ({ locals }) => {
-	// In production, check authentication
-	// if (!locals.isAuthenticated) {
-	// 	return json({ error: 'Unauthorized' }, { status: 401 });
-	// }
+	// Require authentication
+	if (!locals.isAuthenticated || !locals.accessToken) {
+		return json({ error: 'Unauthorized' }, { status: 401 });
+	}
 
 	try {
 		// Fetch current availability from parking-service
-		const response = await fetch(`${PARKING_SERVICE_URL}/analytics/availability/current`);
+		const response = await fetch(`${PARKING_SERVICE_URL}/analytics/availability/current`, {
+			headers: {
+				'Authorization': `Bearer ${locals.accessToken}`
+			}
+		});
 
 		if (!response.ok) {
 			console.error(

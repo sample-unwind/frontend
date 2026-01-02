@@ -69,3 +69,11 @@ export function generateState(): string {
 export function generateCodeVerifier(): string {
 	return client.randomPKCECodeVerifier();
 }
+
+export async function refreshTokens(
+	oidcConfig: client.Configuration,
+	refreshToken: string
+): Promise<client.TokenEndpointResponse> {
+	const tokens = await client.refreshTokenGrant(oidcConfig, refreshToken);
+	return tokens;
+}

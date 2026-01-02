@@ -48,7 +48,8 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
-				'X-Tenant-ID': DEFAULT_TENANT_ID
+				'X-Tenant-ID': DEFAULT_TENANT_ID,
+				'Authorization': `Bearer ${locals.accessToken}`
 			},
 			body: JSON.stringify(query)
 		});
@@ -84,7 +85,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
-				'X-Tenant-ID': DEFAULT_TENANT_ID
+				'X-Tenant-ID': DEFAULT_TENANT_ID,
+				'Authorization': `Bearer ${locals.accessToken}`
 			},
 			body: JSON.stringify(body)
 		});
