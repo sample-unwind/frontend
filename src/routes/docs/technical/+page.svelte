@@ -149,41 +149,83 @@
 </div>
 
 <style>
-	/* Custom styles for rendered markdown */
+	/* Custom styles for rendered markdown - using plain CSS for Tailwind v4 compatibility */
 	:global(.prose h1) {
-		@apply text-2xl font-bold mt-6 mb-4;
+		font-size: 1.5rem;
+		line-height: 2rem;
+		font-weight: 700;
+		margin-top: 1.5rem;
+		margin-bottom: 1rem;
 	}
 	:global(.prose h2) {
-		@apply text-xl font-bold mt-6 mb-3 border-b pb-2;
+		font-size: 1.25rem;
+		line-height: 1.75rem;
+		font-weight: 700;
+		margin-top: 1.5rem;
+		margin-bottom: 0.75rem;
+		border-bottom: 1px solid var(--fallback-bc, oklch(var(--bc) / 0.2));
+		padding-bottom: 0.5rem;
 	}
 	:global(.prose h3) {
-		@apply text-lg font-semibold mt-4 mb-2;
+		font-size: 1.125rem;
+		line-height: 1.75rem;
+		font-weight: 600;
+		margin-top: 1rem;
+		margin-bottom: 0.5rem;
 	}
 	:global(.prose table) {
-		@apply w-full my-4;
+		width: 100%;
+		margin-top: 1rem;
+		margin-bottom: 1rem;
 	}
 	:global(.prose th) {
-		@apply bg-base-200 px-3 py-2 text-left font-semibold;
+		background-color: var(--fallback-b2, oklch(var(--b2)));
+		padding: 0.5rem 0.75rem;
+		text-align: left;
+		font-weight: 600;
 	}
 	:global(.prose td) {
-		@apply border-t px-3 py-2;
+		border-top: 1px solid var(--fallback-bc, oklch(var(--bc) / 0.2));
+		padding: 0.5rem 0.75rem;
 	}
 	:global(.prose code) {
-		@apply bg-base-200 px-1.5 py-0.5 rounded text-sm;
+		background-color: var(--fallback-b2, oklch(var(--b2)));
+		padding: 0.125rem 0.375rem;
+		border-radius: 0.25rem;
+		font-size: 0.875rem;
+		line-height: 1.25rem;
 	}
 	:global(.prose pre) {
-		@apply bg-base-300 p-4 rounded-lg overflow-x-auto my-4;
+		background-color: var(--fallback-b3, oklch(var(--b3)));
+		padding: 1rem;
+		border-radius: 0.5rem;
+		overflow-x: auto;
+		margin-top: 1rem;
+		margin-bottom: 1rem;
 	}
 	:global(.prose pre code) {
-		@apply bg-transparent p-0;
+		background-color: transparent;
+		padding: 0;
 	}
 	:global(.prose img) {
-		@apply my-4 max-w-full;
+		margin-top: 1rem;
+		margin-bottom: 1rem;
+		max-width: 100%;
 	}
 	:global(.prose a) {
-		@apply text-primary hover:underline;
+		color: var(--fallback-p, oklch(var(--p)));
+	}
+	:global(.prose a:hover) {
+		text-decoration: underline;
 	}
 	:global(.prose blockquote) {
-		@apply border-l-4 border-warning pl-4 italic my-4 bg-warning/10 py-2;
+		border-left: 4px solid var(--fallback-wa, oklch(var(--wa)));
+		padding-left: 1rem;
+		font-style: italic;
+		margin-top: 1rem;
+		margin-bottom: 1rem;
+		background-color: var(--fallback-wa, oklch(var(--wa) / 0.1));
+		padding-top: 0.5rem;
+		padding-bottom: 0.5rem;
 	}
 </style>
