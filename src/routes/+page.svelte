@@ -16,7 +16,19 @@
 		longitude: number;
 	}
 
+	interface WeatherData {
+		available: boolean;
+		temp?: number;
+		feels_like?: number;
+		humidity?: number;
+		description?: string;
+		icon?: string;
+		wind_speed?: number;
+		message?: string;
+	}
+
 	let parkingSpots: ParkingSpot[] = $state([]);
+	let weather: WeatherData | undefined = $state(undefined);
 	let loading = $state(true);
 	let error = $state<string | null>(null);
 
@@ -28,6 +40,7 @@
 			}
 			const result = await response.json();
 			parkingSpots = result.parkingSpots;
+			weather = result.weather;
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'An error occurred';
 		} finally {
@@ -97,7 +110,7 @@
 				<span>{error}</span>
 			</div>
 		{:else}
-			<ParkingList {parkingSpots} user={data.user} />
+			<ParkingList {parkingSpots} {weather} user={data.user} />
 		{/if}
 	</AuthenticatedLayout>
 {/if}

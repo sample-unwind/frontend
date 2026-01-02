@@ -16,6 +16,17 @@ interface AvailabilityData {
 	actual_timestamp: string;
 }
 
+interface WeatherData {
+	available: boolean;
+	temp?: number;
+	feels_like?: number;
+	humidity?: number;
+	description?: string;
+	icon?: string;
+	wind_speed?: number;
+	message?: string;
+}
+
 interface ParkingSpot {
 	id: string;
 	name: string;
@@ -35,16 +46,19 @@ export const GET: RequestHandler = async ({ locals }) => {
 	}
 
 	try {
-		// Fetch current availability from parking-service
-		const response = await fetch(`${PARKING_SERVICE_URL}/analytics/availability/current`, {
-			headers: {
-				'Authorization': `Bearer ${locals.accessToken}`
-			}
-		});
+		// Fetch current availability and weather in parallel
+		const [availabilityResponse, weatherResponse] = await Promise.all([
+			fetch(`${PARKING_SERVICE_URL}/analytics/availability/current`, {
+				headers: {
+					Authorization: `Bearer ${locals.accessToken}`
+				}
+			}),
+			fetch(`${PARKING_SERVICE_URL}/weather`).catch(() => null)
+		]);
 
-		if (!response.ok) {
+		if (!availabilityResponse.ok) {
 			console.error(
-				`Parking service returned ${response.status}: ${await response.text()}`
+				`Parking service returned ${availabilityResponse.status}: ${await availabilityResponse.text()}`
 			);
 			return json(
 				{ error: 'Failed to fetch parking data from parking-service' },
@@ -52,7 +66,13 @@ export const GET: RequestHandler = async ({ locals }) => {
 			);
 		}
 
-		const availabilityData: AvailabilityData[] = await response.json();
+		const availabilityData: AvailabilityData[] = await availabilityResponse.json();
+
+		// Parse weather data (with fallback if unavailable)
+		let weather: WeatherData = { available: false, message: 'Weather service unavailable' };
+		if (weatherResponse && weatherResponse.ok) {
+			weather = await weatherResponse.json();
+		}
 
 		// Transform the data to match frontend expected format
 		// Group by parking location name and take the most recent entry for each
@@ -81,14 +101,12 @@ export const GET: RequestHandler = async ({ locals }) => {
 
 		return json({
 			parkingSpots,
+			weather,
 			totalCount: parkingSpots.length,
 			timestamp: new Date().toISOString()
 		});
 	} catch (error) {
 		console.error('Error fetching from parking-service:', error);
-		return json(
-			{ error: 'Failed to connect to parking-service' },
-			{ status: 503 }
-		);
+		return json({ error: 'Failed to connect to parking-service' }, { status: 503 });
 	}
 };

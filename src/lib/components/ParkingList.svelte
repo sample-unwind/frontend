@@ -19,6 +19,17 @@
 		name: string;
 	}
 
+	interface WeatherData {
+		available: boolean;
+		temp?: number;
+		feels_like?: number;
+		humidity?: number;
+		description?: string;
+		icon?: string;
+		wind_speed?: number;
+		message?: string;
+	}
+
 	interface ReservationResult {
 		id: string;
 		status: string;
@@ -29,7 +40,11 @@
 		parkingSpotId: string;
 	}
 
-	let { parkingSpots, user }: { parkingSpots: ParkingSpot[]; user?: User } = $props();
+	let {
+		parkingSpots,
+		user,
+		weather
+	}: { parkingSpots: ParkingSpot[]; user?: User; weather?: WeatherData } = $props();
 
 	let selectedSpot = $state<ParkingSpot | null>(null);
 	let showReservationModal = $state(false);
@@ -73,11 +88,68 @@
 		showReservationModal = false;
 		selectedSpot = null;
 	}
+
+	function getWeatherIconUrl(icon: string): string {
+		return `https://openweathermap.org/img/wn/${icon}@2x.png`;
+	}
 </script>
 
 {#if successMessage}
 	<div class="alert alert-success mb-4">
 		<span>{successMessage}</span>
+	</div>
+{/if}
+
+<!-- Weather Card -->
+{#if weather}
+	<div class="card bg-base-100 shadow-md mb-6">
+		<div class="card-body py-4">
+			<div class="flex items-center justify-between">
+				<div class="flex items-center gap-3">
+					<h3 class="font-semibold text-lg">Ljubljana Weather</h3>
+					{#if weather.available && weather.icon}
+						<img
+							src={getWeatherIconUrl(weather.icon)}
+							alt={weather.description || 'Weather'}
+							class="w-12 h-12"
+						/>
+					{/if}
+				</div>
+				{#if weather.available}
+					<div class="flex items-center gap-6 text-sm">
+						<div class="flex items-center gap-2">
+							<span class="text-3xl font-bold">{weather.temp?.toFixed(1)}°C</span>
+						</div>
+						<div class="hidden sm:flex flex-col">
+							<span class="text-base-content/70 capitalize">{weather.description}</span>
+							<span class="text-base-content/50">Feels like {weather.feels_like?.toFixed(1)}°C</span>
+						</div>
+						<div class="hidden md:flex flex-col text-base-content/70">
+							<span>Humidity: {weather.humidity}%</span>
+							<span>Wind: {weather.wind_speed?.toFixed(1)} m/s</span>
+						</div>
+					</div>
+				{:else}
+					<div class="flex items-center gap-2 text-base-content/50">
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							class="h-5 w-5"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke="currentColor"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+							/>
+						</svg>
+						<span>{weather.message || 'Weather unavailable'}</span>
+					</div>
+				{/if}
+			</div>
+		</div>
 	</div>
 {/if}
 
